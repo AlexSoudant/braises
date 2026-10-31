@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Braises</title>
+  <meta name="description" content="Garde tes amitiés au chaud : suis le temps écoulé depuis ton dernier échange avec chaque ami.">
+  <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11151b" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Braises">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">
+        <h1>Braises</h1>
+        <p id="summary"></p>
+      </div>
+      <div class="actions">
+        <button class="btn primary" data-act="new">+ Ajouter un ami</button>
+        <div class="menu-wrap">
+          <button class="btn icon-btn" id="menu-btn" data-act="menu" aria-label="Plus d’options" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="menu" id="menu" hidden>
+            <button data-act="export">Exporter une sauvegarde</button>
+            <button data-act="import">Restaurer une sauvegarde</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="legend" aria-label="Légende des couleurs">
+      <span class="h0"><i class="sw"></i>Brûlant</span><span class="h1"><i class="sw"></i>Chaud</span><span class="h2"><i class="sw"></i>Tiède</span>
+      <span class="h3"><i class="sw"></i>Refroidi</span><span class="h4"><i class="sw"></i>Glacé</span>
+      <span>· selon le rythme souhaité pour chaque ami</span>
+    </div>
+
+    <section class="tools" id="tools" hidden>
+      <input type="search" id="search" placeholder="Rechercher un ami" aria-label="Rechercher un ami" autocomplete="off">
+      <div class="seg" role="group" aria-label="Trier par">
+        <button data-sort="urgence">À relancer</button><button data-sort="nom">Nom</button><button data-sort="anniv">Anniversaire</button>
+      </div>
+      <div class="chips" id="filters" role="group" aria-label="Type du dernier échange"></div>
+    </section>
+
+    <section id="list" aria-live="polite"></section>
+  </main>
+
+  <div class="scrim" id="scrim" hidden data-act="close"></div>
+  <aside class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title"></aside>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
