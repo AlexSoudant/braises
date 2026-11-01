@@ -33,6 +33,7 @@ test('un nom vide est refusé avec un message, et rien n’est enregistré', asy
   await userEvent.click(within(formulaire).getByRole('button', { name: 'Enregistrer' }));
 
   expect(within(formulaire).getByLabelText('Nom')).toHaveAccessibleDescription('Le nom est obligatoire.');
+  expect(within(formulaire).getByLabelText('Nom')).toHaveFocus();
   await userEvent.click(within(formulaire).getByRole('button', { name: 'Annuler' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.getByText('Aucun ami pour l’instant.')).toBeInTheDocument();
@@ -86,6 +87,7 @@ test('une date d’anniversaire impossible est refusée avec un message', async 
   await userEvent.click(within(formulaire).getByRole('button', { name: 'Enregistrer' }));
 
   expect(within(formulaire).getByLabelText('Jour')).toHaveAccessibleDescription('Cette date n’existe pas.');
+  expect(within(formulaire).getByLabelText('Jour')).toHaveFocus();
   expect(screen.getByRole('dialog', { name: 'Nouvel ami' })).toBeInTheDocument();
 });
 

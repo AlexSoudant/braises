@@ -7,10 +7,13 @@ import {
   libelleRythme,
   prochainAnniversaire,
   saisieDepuis,
+  TYPES_ECHANGE,
   type Ami,
+  type AmiSuivi,
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
 import { FormulaireAmi } from './FormulaireAmi';
+import { FormulaireEchange } from './FormulaireEchange';
 import { allerAuRegistre } from './navigation';
 import { Panneau } from './Panneau';
 
@@ -63,7 +66,7 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
           <BadgeChaleur niveau={niveau} />
         </dd>
         <dt className="text-discret">Dernier échange</dt>
-        <dd>{jours === null ? 'Jamais' : joursRelatifs(jours)}</dd>
+        <dd>{texteDernierEchange(suivi, jours)}</dd>
         <dt className="text-discret">Rythme</dt>
         <dd>{libelleRythme(suivi.ami.rythme)}</dd>
         <dt className="text-discret">Anniversaire</dt>
@@ -72,6 +75,7 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
         <dd>{texteNombreEchanges(nombreEchanges)}</dd>
       </dl>
       {suivi.ami.notes && <p className="whitespace-pre-line text-discret">{suivi.ami.notes}</p>}
+      <FormulaireEchange amiId={id} aujourdhui={aujourdhui} />
       <div className="flex justify-end">
         <button
           ref={boutonModifier}
@@ -84,6 +88,12 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
       </div>
     </Panneau>
   );
+}
+
+function texteDernierEchange({ dernier }: AmiSuivi, jours: number | null): string {
+  if (!dernier || jours === null) return 'Jamais';
+  const texte = `${TYPES_ECHANGE[dernier.type]} · ${joursRelatifs(jours)}`;
+  return dernier.note ? `${texte} — ${dernier.note}` : texte;
 }
 
 function texteAnniversaire(ami: Ami, aujourdhui: Date): string {

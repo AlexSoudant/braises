@@ -9,9 +9,11 @@ import {
   saisieDepuis,
   suivre,
   validerAmi,
+  validerEchange,
   type Ami,
   type Echange,
   type SaisieAmi,
+  type SaisieEchange,
   type Vue,
 } from './model';
 
@@ -172,4 +174,41 @@ test('modifier un Ami sans rien changer redonne le même Ami', () => {
   for (const { id, ...ami } of amis) {
     expect(validerAmi(saisieDepuis({ id, ...ami }), aujourdhui)).toEqual({ ok: true, ami });
   }
+});
+
+describe('validation d’un Échange', () => {
+  const saisie = (champs: Partial<SaisieEchange> = {}): SaisieEchange => ({
+    type: 'tel',
+    date: '2026-10-31',
+    note: '',
+    ...champs,
+  });
+
+  test('un Type et une date suffisent ; la note est nettoyée, et omise si vide', () => {
+    expect(validerEchange(saisie(), aujourdhui)).toEqual({
+      ok: true,
+      echange: { type: 'tel', date: '2026-10-31' },
+    });
+    expect(validerEchange(saisie({ note: '  Pizza ', date: '2026-01-15' }), aujourdhui)).toEqual({
+      ok: true,
+      echange: { type: 'tel', date: '2026-01-15', note: 'Pizza' },
+    });
+  });
+
+  test('refuse un Échange sans Type', () => {
+    expect(validerEchange(saisie({ type: '' }), aujourdhui)).toEqual({
+      ok: false,
+      erreurs: { type: 'Choisis le type d’échange.' },
+    });
+  });
+
+  test.each([
+    ['2026-11-01', 'Cette date est dans le futur.'],
+    ['', 'Indique une date valide.'],
+    ['2026-02-30', 'Indique une date valide.'],
+    ['31/10/2026', 'Indique une date valide.'],
+  ])('refuse la date « %s »', (date, message) => {
+    const r = validerEchange(saisie({ date }), aujourdhui);
+    expect(!r.ok && r.erreurs.date).toBe(message);
+  });
 });

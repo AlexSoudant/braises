@@ -18,7 +18,7 @@ test('toucher une ligne ouvre la fiche de l’Ami à sa propre adresse', async (
 
   const fiche = await screen.findByRole('dialog', { name: 'Inès' });
   expect(within(fiche).getByText('Brûlant')).toBeInTheDocument();
-  expect(within(fiche).getByText('hier')).toBeInTheDocument();
+  expect(within(fiche).getByText('Spontané · hier — Café improvisé')).toBeInTheDocument();
   expect(within(fiche).getByText('Chaque mois')).toBeInTheDocument();
   expect(within(fiche).getByText(/2 déc\..*dans 32 j.*30 ans/)).toBeInTheDocument();
   expect(within(fiche).getByText('2 échanges')).toBeInTheDocument();

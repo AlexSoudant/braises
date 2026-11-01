@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { RYTHMES, validerAmi, type Ami, type ErreursAmi, type SaisieAmi } from '../domain/model';
+import { Champ, CHAMP, MessageEchec, MessageErreur } from './formulaire';
+import { ariaErreur, useEnvoi, useFocusPremiereErreur } from './saisie';
 
-const CHAMP = 'w-full rounded-lg border border-ligne bg-fond px-3 py-2';
 const PERSONNALISE = 'personnalise';
 const MOIS = [
   'janvier',
@@ -33,12 +34,12 @@ export function FormulaireAmi({
 }) {
   const [saisie, setSaisie] = useState(initial);
   const [erreurs, setErreurs] = useState<ErreursAmi>({});
-  const [echec, setEchec] = useState(false);
   const [rythmePersonnalise, setRythmePersonnalise] = useState(!estCourant(initial.rythme));
   const id = useId();
+  const formulaire = useRef<HTMLFormElement>(null);
   const champNom = useRef<HTMLInputElement>(null);
-  // Une référence plutôt qu'un état : deux appuis rapprochés arrivent avant le prochain rendu.
-  const enregistrementEnCours = useRef(false);
+  const { envoyer, echec } = useEnvoi();
+  useFocusPremiereErreur(formulaire, erreurs);
 
   // Effet passif : il passe après l'ouverture du panneau, qui a placé le focus sur son premier bouton.
   useEffect(() => champNom.current?.focus(), []);
@@ -46,31 +47,17 @@ export function FormulaireAmi({
     value: saisie[champ],
     onChange: (e: { target: { value: string } }) => setSaisie((s) => ({ ...s, [champ]: e.target.value })),
   });
-  // Lie un champ à son message d'erreur, pour les lecteurs d'écran.
-  const ariaErreur = (cle: keyof ErreursAmi, idChamp: string) => ({
-    'aria-invalid': !!erreurs[cle],
-    'aria-describedby': erreurs[cle] ? `${idChamp}-erreur` : undefined,
-  });
+  const erreur = (cle: keyof ErreursAmi, idChamp: string) => ariaErreur(erreurs[cle], `${idChamp}-erreur`);
 
-  const soumettre = async (e: FormEvent) => {
+  const soumettre = (e: FormEvent) => {
     e.preventDefault();
-    if (enregistrementEnCours.current) return;
     const resultat = validerAmi(saisie, aujourdhui);
     setErreurs(resultat.ok ? {} : resultat.erreurs);
-    if (!resultat.ok) return;
-    enregistrementEnCours.current = true;
-    setEchec(false);
-    try {
-      await onEnregistrer(resultat.ami);
-    } catch {
-      setEchec(true);
-    } finally {
-      enregistrementEnCours.current = false;
-    }
+    if (resultat.ok) void envoyer(() => onEnregistrer(resultat.ami));
   };
 
   return (
-    <form noValidate onSubmit={soumettre} className="grid gap-4">
+    <form ref={formulaire} noValidate onSubmit={soumettre} className="grid gap-4">
       <Champ id={`${id}-nom`} libelle="Nom" erreur={erreurs.nom}>
         <input
           id={`${id}-nom`}
@@ -78,7 +65,7 @@ export function FormulaireAmi({
           ref={champNom}
           autoComplete="off"
           {...liaison('nom')}
-          {...ariaErreur('nom', `${id}-nom`)}
+          {...erreur('nom', `${id}-nom`)}
         />
       </Champ>
 
@@ -111,7 +98,7 @@ export function FormulaireAmi({
             min={1}
             step={1}
             {...liaison('rythme')}
-            {...ariaErreur('rythme', `${id}-jours`)}
+            {...erreur('rythme', `${id}-jours`)}
           />
         </Champ>
       )}
@@ -128,7 +115,7 @@ export function FormulaireAmi({
               min={1}
               max={31}
               {...liaison('jour')}
-              {...ariaErreur('anniversaire', `${id}-anniversaire`)}
+              {...erreur('anniversaire', `${id}-anniversaire`)}
             />
           </Champ>
           <Champ id={`${id}-mois`} libelle="Mois" discret>
@@ -136,7 +123,7 @@ export function FormulaireAmi({
               id={`${id}-mois`}
               className={CHAMP}
               {...liaison('mois')}
-              {...ariaErreur('anniversaire', `${id}-anniversaire`)}
+              {...erreur('anniversaire', `${id}-anniversaire`)}
             >
               <option value="">—</option>
               {MOIS.map((nom, i) => (
@@ -153,14 +140,12 @@ export function FormulaireAmi({
               type="number"
               inputMode="numeric"
               {...liaison('annee')}
-              {...ariaErreur('anniversaire', `${id}-anniversaire`)}
+              {...erreur('anniversaire', `${id}-anniversaire`)}
             />
           </Champ>
         </div>
         {erreurs.anniversaire && (
-          <p id={`${id}-anniversaire-erreur`} className="text-sm text-danger">
-            {erreurs.anniversaire}
-          </p>
+          <MessageErreur id={`${id}-anniversaire-erreur`}>{erreurs.anniversaire}</MessageErreur>
         )}
       </fieldset>
 
@@ -168,11 +153,7 @@ export function FormulaireAmi({
         <textarea id={`${id}-notes`} className={CHAMP} rows={3} {...liaison('notes')} />
       </Champ>
 
-      {echec && (
-        <p role="alert" className="text-sm text-danger">
-          L’enregistrement a échoué. Réessaie.
-        </p>
-      )}
+      {echec && <MessageEchec />}
       <div className="flex justify-end gap-2">
         <button
           type="button"
@@ -186,33 +167,5 @@ export function FormulaireAmi({
         </button>
       </div>
     </form>
-  );
-}
-
-function Champ({
-  id,
-  libelle,
-  erreur,
-  discret = false,
-  children,
-}: {
-  id: string;
-  libelle: string;
-  erreur?: string;
-  discret?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-1">
-      <label htmlFor={id} className={discret ? 'text-xs text-discret' : 'text-sm font-semibold'}>
-        {libelle}
-      </label>
-      {children}
-      {erreur && (
-        <p id={`${id}-erreur`} className="text-sm text-danger">
-          {erreur}
-        </p>
-      )}
-    </div>
   );
 }

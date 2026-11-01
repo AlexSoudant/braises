@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { fermerFiche } from './navigation';
+import { NotificationsDuPanneau } from './Notification';
 
 /** Dialogue modal natif : panneau par le bas sur téléphone, centré sur grand écran. */
 export function Panneau({ titre, children }: { titre: string; children: ReactNode }) {
@@ -49,6 +50,7 @@ export function Panneau({ titre, children }: { titre: string; children: ReactNod
         </header>
         {children}
       </div>
+      <NotificationsDuPanneau />
     </dialog>
   );
 }

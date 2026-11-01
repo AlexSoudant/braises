@@ -244,3 +244,29 @@ function validerAnniversaire(
   const mmjj = `${String(m).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
   return { valeur: a ? `${a}-${mmjj}` : `--${mmjj}` };
 }
+
+/** Ce que l'utilisateur saisit pour noter un Échange, avant validation. */
+export interface SaisieEchange {
+  type: TypeEchange | '';
+  date: DateJour;
+  note: string;
+}
+
+export type ErreursEchange = Partial<Record<'type' | 'date', string>>;
+
+export type ResultatSaisieEchange =
+  { ok: true; echange: Omit<Echange, 'id' | 'amiId'> } | { ok: false; erreurs: ErreursEchange };
+
+export function validerEchange(saisie: SaisieEchange, aujourdhui: Date): ResultatSaisieEchange {
+  const erreurs: ErreursEchange = {};
+  if (!saisie.type) erreurs.type = 'Choisis le type d’échange.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(saisie.date) || versDateJour(lireDateJour(saisie.date)) !== saisie.date)
+    erreurs.date = 'Indique une date valide.';
+  else if (saisie.date > versDateJour(aujourdhui)) erreurs.date = 'Cette date est dans le futur.';
+  if (!saisie.type || Object.keys(erreurs).length) return { ok: false, erreurs };
+
+  const echange: Omit<Echange, 'id' | 'amiId'> = { type: saisie.type, date: saisie.date };
+  const note = saisie.note.trim();
+  if (note) echange.note = note;
+  return { ok: true, echange };
+}

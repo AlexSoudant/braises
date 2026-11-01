@@ -52,6 +52,13 @@ export async function modifierAmi(id: string, ami: Omit<Ami, 'id'>): Promise<voi
   await db.amis.put({ ...ami, id });
 }
 
+/** Enregistre un Échange avec un Ami et renvoie son identifiant. */
+export async function noterEchange(amiId: string, echange: Omit<Echange, 'id' | 'amiId'>): Promise<string> {
+  const id = crypto.randomUUID();
+  await db.echanges.add({ ...echange, id, amiId });
+  return id;
+}
+
 export async function chargerExemples(aujourdhui: Date): Promise<void> {
   const ilYa = (n: number) =>
     versDateJour(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - n));
