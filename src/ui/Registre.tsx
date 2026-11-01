@@ -5,21 +5,12 @@ import {
   joursDepuis,
   joursRelatifs,
   libelleRythme,
-  NIVEAUX_CHALEUR,
   prochainAnniversaire,
   TYPES_ECHANGE,
   type AmiSuivi,
-  type Chaleur,
 } from '../domain/model';
-
-// Classes complètes écrites en clair pour que Tailwind les détecte.
-const BADGE: Record<Chaleur, string> = {
-  0: 'bg-chaleur-0 text-chaleur-0-texte',
-  1: 'bg-chaleur-1 text-chaleur-1-texte',
-  2: 'bg-chaleur-2 text-chaleur-2-texte',
-  3: 'bg-chaleur-3 text-chaleur-3-texte',
-  4: 'bg-chaleur-4 text-chaleur-4-texte',
-};
+import { BadgeChaleur } from './BadgeChaleur';
+import { ouvrirFiche } from './navigation';
 
 export function Registre({ aujourdhui }: { aujourdhui: Date }) {
   const suivis = useRegistre();
@@ -39,27 +30,29 @@ function Ligne({ suivi, aujourdhui }: { suivi: AmiSuivi; aujourdhui: Date }) {
   const jours = joursDepuis(suivi, aujourdhui);
   const anniv = prochainAnniversaire(suivi.ami, aujourdhui);
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-ligne bg-surface p-3">
-      <span
-        className={`w-20 shrink-0 rounded-lg px-2 py-1 text-center text-sm font-semibold ${BADGE[niveau]}`}
+    <li>
+      <button
+        type="button"
+        onClick={() => ouvrirFiche(suivi.ami.id)}
+        className="flex w-full items-center gap-3 rounded-xl border border-ligne bg-surface p-3 text-left"
       >
-        {NIVEAUX_CHALEUR[niveau]}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{suivi.ami.nom}</p>
-        <p className="text-sm text-discret">
-          {suivi.dernier
-            ? `${TYPES_ECHANGE[suivi.dernier.type]} · ${joursRelatifs(jours!)}`
-            : 'Aucun échange'}
-          {' · '}
-          {libelleRythme(suivi.ami.rythme)}
-        </p>
-      </div>
-      {anniv && anniv.jours <= 30 && (
-        <span className="text-sm text-discret tabular-nums">
-          🎂 {anniv.jours === 0 ? 'aujourd’hui' : `J-${anniv.jours}`}
-        </span>
-      )}
+        <BadgeChaleur niveau={niveau} />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">{suivi.ami.nom}</p>
+          <p className="text-sm text-discret">
+            {suivi.dernier
+              ? `${TYPES_ECHANGE[suivi.dernier.type]} · ${joursRelatifs(jours!)}`
+              : 'Aucun échange'}
+            {' · '}
+            {libelleRythme(suivi.ami.rythme)}
+          </p>
+        </div>
+        {anniv && anniv.jours <= 30 && (
+          <span className="text-sm text-discret tabular-nums">
+            🎂 {anniv.jours === 0 ? 'aujourd’hui' : `J-${anniv.jours}`}
+          </span>
+        )}
+      </button>
     </li>
   );
 }

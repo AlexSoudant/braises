@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { versDateJour } from './domain/model';
+import { FicheAmi } from './ui/FicheAmi';
+import { useAdresse } from './ui/navigation';
 import { Registre } from './ui/Registre';
 
 export function App() {
   const aujourdhui = useAujourdhui();
+  const adresse = useAdresse();
   return (
     <main className="mx-auto grid max-w-3xl gap-5 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-10">
       <header>
@@ -11,6 +14,7 @@ export function App() {
         <p className="mt-1 text-discret">Garde tes amitiés au chaud.</p>
       </header>
       <Registre aujourdhui={aujourdhui} />
+      {adresse.page === 'ami' && <FicheAmi key={adresse.id} id={adresse.id} aujourdhui={aujourdhui} />}
     </main>
   );
 }

@@ -25,6 +25,21 @@ export function useRegistre(): AmiSuivi[] | undefined {
   return useLiveQuery(async () => suivre(await db.amis.toArray(), await db.echanges.toArray()));
 }
 
+export interface ResumeAmi {
+  suivi: AmiSuivi;
+  nombreEchanges: number;
+}
+
+/** Un Ami et le résumé de ses Échanges ; `null` s'il n'existe pas, `undefined` tant que la base n'a pas répondu. */
+export function useResumeAmi(id: string): ResumeAmi | null | undefined {
+  return useLiveQuery(async () => {
+    const ami = await db.amis.get(id);
+    if (!ami) return null;
+    const echanges = await db.echanges.where('amiId').equals(id).toArray();
+    return { suivi: suivre([ami], echanges)[0], nombreEchanges: echanges.length };
+  }, [id]);
+}
+
 export async function chargerExemples(aujourdhui: Date): Promise<void> {
   const ilYa = (n: number) =>
     versDateJour(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - n));
