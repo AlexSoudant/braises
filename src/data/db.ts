@@ -9,7 +9,7 @@ import {
   type Echange,
   type TypeEchange,
 } from '../domain/model';
-import { construireSauvegarde, nomFichierSauvegarde } from '../domain/sauvegarde';
+import { construireSauvegarde, nomFichierSauvegarde, type Sauvegarde } from '../domain/sauvegarde';
 
 export const db = new Dexie('braises') as Dexie & {
   amis: EntityTable<Ami, 'id'>;
@@ -96,6 +96,16 @@ export async function exporter(maintenant: Date): Promise<File> {
   const sauvegarde = construireSauvegarde(amis, echanges, maintenant);
   return new File([JSON.stringify(sauvegarde, null, 2)], nomFichierSauvegarde(maintenant), {
     type: 'application/json',
+  });
+}
+
+/** Remplace tout le contenu de la base par une sauvegarde déjà validée, entièrement ou pas du tout. */
+export async function importer(sauvegarde: Sauvegarde): Promise<void> {
+  await db.transaction('rw', db.amis, db.echanges, async () => {
+    await db.amis.clear();
+    await db.echanges.clear();
+    await db.amis.bulkAdd(sauvegarde.amis);
+    await db.echanges.bulkAdd(sauvegarde.echanges);
   });
 }
 

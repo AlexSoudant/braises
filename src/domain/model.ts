@@ -69,6 +69,11 @@ export function lireDateJour(s: DateJour): Date {
   return new Date(y, m - 1, d);
 }
 
+/** Vrai pour une date `AAAA-MM-JJ` qui existe : une date qui ne survit pas à l'aller-retour (30 février, mois 13) n'existe pas. */
+export function estDateJour(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && versDateJour(lireDateJour(s)) === s;
+}
+
 export function joursEntre(apres: Date, avant: Date): number {
   return Math.round((debutDuJour(apres).getTime() - debutDuJour(avant).getTime()) / JOUR);
 }
@@ -260,8 +265,7 @@ export type ResultatSaisieEchange =
 export function validerEchange(saisie: SaisieEchange, aujourdhui: Date): ResultatSaisieEchange {
   const erreurs: ErreursEchange = {};
   if (!saisie.type) erreurs.type = 'Choisis le type d’échange.';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(saisie.date) || versDateJour(lireDateJour(saisie.date)) !== saisie.date)
-    erreurs.date = 'Indique une date valide.';
+  if (!estDateJour(saisie.date)) erreurs.date = 'Indique une date valide.';
   else if (saisie.date > versDateJour(aujourdhui)) erreurs.date = 'Cette date est dans le futur.';
   if (!saisie.type || Object.keys(erreurs).length) return { ok: false, erreurs };
 

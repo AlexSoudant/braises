@@ -166,3 +166,68 @@ test('supprimer un Ami supprime aussi ses Échanges : l’export n’en garde au
   expect(sauvegarde.echanges).toHaveLength(8);
   expect(sauvegarde.echanges.every((e: { amiId: string }) => ids.has(e.amiId))).toBe(true);
 });
+
+const lignesDuRegistre = () => screen.getAllByRole('listitem').map((li) => li.textContent);
+
+async function choisirFichier(menu: HTMLElement, fichier: File) {
+  await userEvent.upload(within(menu).getByLabelText('Importer une sauvegarde'), fichier);
+}
+
+const fichierJson = (contenu: object) =>
+  new File([JSON.stringify(contenu)], 'sauvegarde.json', { type: 'application/json' });
+
+test('un fichier exporté puis réimporté redonne exactement le même Registre', async () => {
+  const partages = imiterPartage();
+  let menu = await ouvrirMenuAvecExemples();
+  const registre = lignesDuRegistre();
+  await userEvent.click(within(menu).getByRole('button', { name: 'Exporter une sauvegarde' }));
+  await waitFor(() => expect(partages).toHaveLength(1));
+  await userEvent.click(within(menu).getByRole('button', { name: 'Tout effacer' }));
+  await userEvent.click(within(menu).getByRole('button', { name: 'Tout effacer définitivement' }));
+  await screen.findByRole('button', { name: 'Essayer avec des exemples' });
+
+  await userEvent.click(screen.getByRole('button', { name: 'Menu' }));
+  menu = await screen.findByRole('dialog', { name: 'Menu' });
+  await choisirFichier(menu, partages[0]);
+  expect(
+    await within(menu).findByText(
+      'Importer cette sauvegarde : 6 amis et 11 échanges ? Elle remplacera toutes tes données actuelles.',
+    ),
+  ).toBeInTheDocument();
+  await userEvent.click(within(menu).getByRole('button', { name: 'Remplacer mes données' }));
+
+  expect(await within(menu).findByText('Import terminé : 6 amis et 11 échanges.')).toHaveFocus();
+  await userEvent.click(within(menu).getByRole('button', { name: 'Terminé' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(lignesDuRegistre()).toEqual(registre);
+});
+
+test('annuler l’import ne change rien', async () => {
+  const menu = await ouvrirMenuAvecExemples();
+  const registre = lignesDuRegistre();
+  const zoe = { id: 'a1', nom: 'Zoé', rythme: 30 };
+
+  await choisirFichier(
+    menu,
+    fichierJson({ app: 'braises', version: 1, exporteLe: '', amis: [zoe], echanges: [] }),
+  );
+  await within(menu).findByText(/Importer cette sauvegarde : 1 ami et aucun échange/);
+  await userEvent.click(within(menu).getByRole('button', { name: 'Annuler' }));
+
+  expect(within(menu).getByLabelText('Importer une sauvegarde')).toHaveFocus();
+  expect(lignesDuRegistre()).toEqual(registre);
+  expect(screen.queryByText('Zoé')).not.toBeInTheDocument();
+});
+
+test('un fichier refusé affiche le motif et laisse les données intactes', async () => {
+  const menu = await ouvrirMenuAvecExemples();
+  const registre = lignesDuRegistre();
+
+  await choisirFichier(menu, fichierJson({ friends: [{ name: 'Zoé' }] }));
+
+  expect(await within(menu).findByRole('alert')).toHaveTextContent(
+    'Ce fichier n’est pas une sauvegarde Braises.',
+  );
+  expect(within(menu).queryByRole('button', { name: 'Remplacer mes données' })).not.toBeInTheDocument();
+  expect(lignesDuRegistre()).toEqual(registre);
+});
