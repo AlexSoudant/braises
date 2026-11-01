@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { modifierAmi, useResumeAmi } from '../data/db';
+import { modifierAmi, supprimerAmi, useResumeAmi } from '../data/db';
 import {
   chaleur,
   joursDepuis,
@@ -12,30 +12,40 @@ import {
   type AmiSuivi,
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
+import { ConfirmerSuppression } from './ConfirmerSuppression';
 import { FormulaireAmi } from './FormulaireAmi';
 import { FormulaireEchange } from './FormulaireEchange';
 import { Historique } from './Historique';
-import { allerAuRegistre } from './navigation';
+import { allerAuRegistre, fermerFiche } from './navigation';
+import { useNotifier } from './notifier';
 import { Panneau } from './Panneau';
+
+type Mode = 'consultation' | 'modification' | 'suppression';
 
 export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   const resume = useResumeAmi(id);
-  const [enModification, setEnModification] = useState(false);
+  const [mode, setMode] = useState<Mode>('consultation');
   const boutonModifier = useRef<HTMLButtonElement>(null);
-  const quitterModification = useRef(false);
+  const boutonSupprimer = useRef<HTMLButtonElement>(null);
+  // Mode quitté : le focus revient sur le bouton qui l'avait ouvert au lieu de se perdre dans la page.
+  const modeQuitte = useRef<Mode>('consultation');
+  const supprime = useRef(false);
+  const notifier = useNotifier();
 
-  // En sortant du formulaire, le focus revient sur « Modifier » au lieu de se perdre dans la page.
   useEffect(() => {
-    if (!enModification && quitterModification.current) boutonModifier.current?.focus();
-  }, [enModification]);
-  const terminerModification = () => {
-    quitterModification.current = true;
-    setEnModification(false);
+    if (mode !== 'consultation') return;
+    if (modeQuitte.current === 'modification') boutonModifier.current?.focus();
+    if (modeQuitte.current === 'suppression') boutonSupprimer.current?.focus();
+  }, [mode]);
+  const revenirALaFiche = () => {
+    modeQuitte.current = mode;
+    setMode('consultation');
   };
 
-  // Adresse d'un Ami qui n'existe pas (supprimé, lien périmé) : retour au Registre.
+  // Adresse d'un Ami qui n'existe pas (lien périmé) : retour au Registre. Après une suppression
+  // depuis la fiche, c'est la fermeture normale de la fiche qui ramène au Registre.
   useEffect(() => {
-    if (resume === null) allerAuRegistre();
+    if (resume === null && !supprime.current) allerAuRegistre();
   }, [resume]);
 
   if (!resume) return null;
@@ -43,7 +53,7 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   const niveau = chaleur(suivi, aujourdhui);
   const jours = joursDepuis(suivi, aujourdhui);
 
-  if (enModification) {
+  if (mode === 'modification') {
     return (
       <Panneau titre={suivi.ami.nom}>
         <FormulaireAmi
@@ -51,9 +61,32 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
           aujourdhui={aujourdhui}
           onEnregistrer={async (ami) => {
             await modifierAmi(id, ami);
-            terminerModification();
+            revenirALaFiche();
           }}
-          onAnnuler={terminerModification}
+          onAnnuler={revenirALaFiche}
+        />
+      </Panneau>
+    );
+  }
+
+  if (mode === 'suppression') {
+    return (
+      <Panneau titre={suivi.ami.nom}>
+        <ConfirmerSuppression
+          nom={suivi.ami.nom}
+          nombreEchanges={historique.length}
+          onConfirmer={async () => {
+            supprime.current = true;
+            try {
+              await supprimerAmi(id);
+            } catch (e) {
+              supprime.current = false;
+              throw e;
+            }
+            fermerFiche();
+            notifier({ message: `Fiche de ${suivi.ami.nom} supprimée` });
+          }}
+          onAnnuler={revenirALaFiche}
         />
       </Panneau>
     );
@@ -78,11 +111,19 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
       {suivi.ami.notes && <p className="whitespace-pre-line text-discret">{suivi.ami.notes}</p>}
       <FormulaireEchange amiId={id} aujourdhui={aujourdhui} />
       <Historique echanges={historique} />
-      <div className="flex justify-end">
+      <div className="flex justify-between gap-2">
+        <button
+          ref={boutonSupprimer}
+          type="button"
+          onClick={() => setMode('suppression')}
+          className="rounded-lg border border-ligne px-4 py-2 font-semibold text-danger"
+        >
+          Supprimer cet ami
+        </button>
         <button
           ref={boutonModifier}
           type="button"
-          onClick={() => setEnModification(true)}
+          onClick={() => setMode('modification')}
           className="rounded-lg border border-ligne px-4 py-2 font-semibold"
         >
           Modifier

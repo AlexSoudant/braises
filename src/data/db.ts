@@ -58,6 +58,14 @@ export async function modifierAmi(id: string, ami: Omit<Ami, 'id'>): Promise<voi
   await db.amis.put({ ...ami, id });
 }
 
+/** Supprime un Ami et tous ses Échanges, ensemble ou pas du tout. */
+export async function supprimerAmi(id: string): Promise<void> {
+  await db.transaction('rw', db.amis, db.echanges, async () => {
+    await db.echanges.where('amiId').equals(id).delete();
+    await db.amis.delete(id);
+  });
+}
+
 /** Enregistre un Échange avec un Ami et renvoie son identifiant. */
 export async function noterEchange(amiId: string, echange: Omit<Echange, 'id' | 'amiId'>): Promise<string> {
   const id = crypto.randomUUID();
