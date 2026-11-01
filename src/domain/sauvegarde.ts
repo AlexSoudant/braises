@@ -1,5 +1,15 @@
 // Format du fichier de sauvegarde : la seule copie des données hors de l'appareil (ADR 0002).
-import { estDateJour, TYPES_ECHANGE, versDateJour, type Ami, type Echange, type TypeEchange } from './model';
+import {
+  estDateJour,
+  joursEntre,
+  lireDateJour,
+  TYPES_ECHANGE,
+  versDateJour,
+  type Ami,
+  type DateJour,
+  type Echange,
+  type TypeEchange,
+} from './model';
 
 export interface Sauvegarde {
   app: 'braises';
@@ -17,6 +27,24 @@ export function construireSauvegarde(amis: Ami[], echanges: Echange[], maintenan
 /** Nom du fichier daté du jour, pour distinguer les sauvegardes entre elles. */
 export function nomFichierSauvegarde(aujourdhui: Date): string {
   return `braises-${versDateJour(aujourdhui)}.json`;
+}
+
+/** Au-delà de ce délai sans export, un rappel invite à sauvegarder. */
+export const DELAI_RAPPEL_EXPORT = 30;
+
+/** Jours écoulés depuis le dernier export, `null` s'il n'y en a jamais eu. */
+export function joursSansExport(dernierExport: DateJour | null, aujourdhui: Date): number | null {
+  return dernierExport === null ? null : Math.max(0, joursEntre(aujourdhui, lireDateJour(dernierExport)));
+}
+
+/** Les données ne sont que sur l'appareil : il faut les sauvegarder si elles existent et que l'export date. */
+export function rappelerExport(
+  nombreAmis: number,
+  dernierExport: DateJour | null,
+  aujourdhui: Date,
+): boolean {
+  const jours = joursSansExport(dernierExport, aujourdhui);
+  return nombreAmis > 0 && (jours === null || jours > DELAI_RAPPEL_EXPORT);
 }
 
 export type LectureSauvegarde = { ok: true; sauvegarde: Sauvegarde } | { ok: false; erreur: string };

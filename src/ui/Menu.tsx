@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { effacerTout, exporter, importer } from '../data/db';
-import { joursEntre, joursRelatifs, lireDateJour, versDateJour } from '../domain/model';
-import { lireSauvegarde, type Sauvegarde } from '../domain/sauvegarde';
+import { effacerTout, importer } from '../data/db';
+import { joursRelatifs } from '../domain/model';
+import { joursSansExport, lireSauvegarde, type Sauvegarde } from '../domain/sauvegarde';
 import { Confirmation } from './Confirmation';
 import { MessageEchec } from './formulaire';
 import { fermerPanneau } from './navigation';
 import { useNotifier } from './notifier';
 import { Panneau } from './Panneau';
-import { partagerOuTelecharger } from './partage';
-import { lireDernierExport, retenirDernierExport } from './preferences';
-import { useEnvoi } from './saisie';
+import { useExportSauvegarde } from './exportSauvegarde';
+import { useDernierExport } from './preferences';
 
 type Etape =
   | { nom: 'menu' }
@@ -20,9 +19,9 @@ type Etape =
 /** Menu ⋯ : sauvegarder ou restaurer ses données, ou tout effacer pour repartir de zéro. */
 export function Menu({ aujourdhui }: { aujourdhui: Date }) {
   const [etape, setEtape] = useState<Etape>({ nom: 'menu' });
-  const [dernierExport, setDernierExport] = useState(lireDernierExport);
+  const dernierExport = useDernierExport();
   const [refusImport, setRefusImport] = useState<string | null>(null);
-  const { envoyer, echec } = useEnvoi();
+  const { exporterSauvegarde, echec } = useExportSauvegarde();
   const notifier = useNotifier();
   const boutonEffacer = useRef<HTMLButtonElement>(null);
   const champImport = useRef<HTMLInputElement>(null);
@@ -39,16 +38,6 @@ export function Menu({ aujourdhui }: { aujourdhui: Date }) {
     setRefusImport(null);
     setEtape({ nom: 'menu' });
   };
-
-  const exporterSauvegarde = () =>
-    envoyer(async () => {
-      const maintenant = new Date();
-      if (!(await partagerOuTelecharger(await exporter(maintenant)))) return;
-      const jour = versDateJour(maintenant);
-      retenirDernierExport(jour);
-      setDernierExport(jour);
-      notifier({ message: 'Sauvegarde exportée' });
-    });
 
   const lireFichier = async (e: ChangeEvent<HTMLInputElement>) => {
     const fichier = e.target.files?.[0];
@@ -183,6 +172,6 @@ function compter(n: number, mot: string): string {
 }
 
 function texteDernierExport(jour: string | null, aujourdhui: Date): string {
-  if (!jour) return 'jamais';
-  return joursRelatifs(Math.max(0, joursEntre(aujourdhui, lireDateJour(jour))));
+  const jours = joursSansExport(jour, aujourdhui);
+  return jours === null ? 'jamais' : joursRelatifs(jours);
 }

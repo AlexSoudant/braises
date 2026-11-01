@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { chargerExemples, useRegistre } from '../data/db';
 import {
   amisVisibles,
@@ -11,15 +12,19 @@ import {
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
 import { ouvrirCreation, ouvrirFiche } from './navigation';
+import { RappelSauvegarde } from './RappelSauvegarde';
 
 export function Registre({ aujourdhui }: { aujourdhui: Date }) {
   const suivis = useRegistre();
+  const boutonAjouter = useRef<HTMLButtonElement>(null);
   if (!suivis) return null;
   if (suivis.length === 0) return <Vide aujourdhui={aujourdhui} />;
   return (
     <section className="grid gap-3">
+      <RappelSauvegarde nombreAmis={suivis.length} aujourdhui={aujourdhui} focusEnPartant={boutonAjouter} />
       <div className="flex justify-end">
         <button
+          ref={boutonAjouter}
           type="button"
           onClick={ouvrirCreation}
           className="rounded-lg bg-encre px-4 py-2 font-semibold text-fond"

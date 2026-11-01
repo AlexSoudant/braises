@@ -1,30 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, expect, onTestFinished, test } from 'vitest';
+import { expect, test } from 'vitest';
 import { afficherApp } from './test/afficherApp';
+import { intercepterTelechargements, imiterPartage } from './test/imitations';
 
 const AUJOURDHUI = new Date(2026, 9, 31, 18, 45);
-
-// jsdom n'a ni partage natif ni URL de fichier : imitations, retirées après chaque test.
-const imitations: [object, string][] = [];
-function imiter(objet: object, nom: string, valeur: unknown) {
-  Object.defineProperty(objet, nom, { configurable: true, writable: true, value: valeur });
-  imitations.push([objet, nom]);
-}
-afterEach(() => {
-  for (const [objet, nom] of imitations.splice(0)) delete (objet as Record<string, unknown>)[nom];
-});
-
-/** Partage natif disponible ; `refus` simule la feuille de partage fermée sans choisir. */
-function imiterPartage(refus?: Error) {
-  const partages: File[] = [];
-  imiter(navigator, 'canShare', (donnees?: ShareData) => !!donnees?.files?.length);
-  imiter(navigator, 'share', async (donnees: ShareData) => {
-    partages.push(...(donnees.files ?? []));
-    if (refus) throw refus;
-  });
-  return partages;
-}
 
 async function ouvrirMenuAvecExemples() {
   afficherApp(AUJOURDHUI);
@@ -76,28 +56,6 @@ test('refermer la feuille de partage n’affiche pas d’erreur et ne retient pa
   expect(within(menu).getByText('Dernier export : jamais')).toBeInTheDocument();
   expect(screen.getByRole('status')).toBeEmptyDOMElement();
 });
-
-/** Pas de partage : on récupère les fichiers téléchargés. */
-function intercepterTelechargements() {
-  const fichiers = new Map<string, Blob>();
-  imiter(URL, 'createObjectURL', (fichier: Blob) => {
-    const url = `blob:braises/${fichiers.size}`;
-    fichiers.set(url, fichier);
-    return url;
-  });
-  imiter(URL, 'revokeObjectURL', () => {});
-  const telechargements: { nom: string; fichier?: Blob }[] = [];
-  // jsdom ne sait pas naviguer : on intercepte le clic sur le lien de téléchargement.
-  const intercepter = (e: MouseEvent) => {
-    const lien = e.target as HTMLAnchorElement;
-    if (!lien.download) return;
-    e.preventDefault();
-    telechargements.push({ nom: lien.download, fichier: fichiers.get(lien.href) });
-  };
-  document.addEventListener('click', intercepter, true);
-  onTestFinished(() => document.removeEventListener('click', intercepter, true));
-  return telechargements;
-}
 
 test('sans partage, l’export télécharge le même fichier', async () => {
   const telechargements = intercepterTelechargements();
