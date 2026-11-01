@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+/* Échelle de Chaleur (0 Brûlant → 4 Glacé), sémantique et distincte de l'accent. */
+@theme {
+  --color-fond: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-encre: #18202c;
+  --color-discret: #5f6b7c;
+  --color-ligne: #dfe4ea;
+  --color-accent: #1f5f5b;
+  --color-danger: #b42318;
+  --color-chaleur-0: #d9412b;
+  --color-chaleur-1: #ee8636;
+  --color-chaleur-2: #e5bf55;
+  --color-chaleur-3: #86aac4;
+  --color-chaleur-4: #4b6a8d;
+  --color-chaleur-0-texte: #ffffff;
+  --color-chaleur-1-texte: #2a1405;
+  --color-chaleur-2-texte: #2a2205;
+  --color-chaleur-3-texte: #0f1f2c;
+  --color-chaleur-4-texte: #ffffff;
+  --font-titre: 'Bricolage Grotesque', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fond: #11151b;
+    --color-surface: #19202a;
+    --color-encre: #e7ebf1;
+    --color-discret: #98a3b4;
+    --color-ligne: #2a333f;
+    --color-accent: #5fb3aa;
+    --color-danger: #ff7a6b;
+    --color-chaleur-0: #ff5d40;
+    --color-chaleur-1: #f59a4a;
+    --color-chaleur-2: #e3c463;
+    --color-chaleur-3: #7da2bf;
+    --color-chaleur-4: #5a7ea8;
+    --color-chaleur-0-texte: #1a0703;
+    --color-chaleur-1-texte: #1f0f03;
+    --color-chaleur-2-texte: #1f1903;
+    --color-chaleur-3-texte: #0a1620;
+    --color-chaleur-4-texte: #ffffff;
+    color-scheme: dark;
+  }
+}
+
+body {
+  @apply bg-fond text-encre antialiased;
+}

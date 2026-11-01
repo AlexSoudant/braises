@@ -1,0 +1,3 @@
+# Données uniquement sur l'appareil, sans serveur
+
+Braises n'a qu'un utilisateur et s'utilise d'abord sur son téléphone. Ses Amis et ses Échanges sont donc stockés dans le navigateur (IndexedDB via Dexie), sans compte ni backend, ce qui garde l'hébergement gratuit et les données privées. L'export/import JSON est la seule sauvegarde et le seul moyen de changer d'appareil. Ce choix exclut les notifications push et la synchronisation automatique. Il impose aussi d'inciter à installer l'app, car Safari efface après 7 jours sans visite les données d'un site non installé. Une synchro (Supabase, Cloudflare) pourra s'ajouter derrière le module d'accès aux données sans toucher aux écrans.

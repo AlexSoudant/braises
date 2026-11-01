@@ -1,43 +1,41 @@
 # Braises
 
-Garde tes amitiés au chaud. Une web app installable qui montre, pour chaque ami, le temps écoulé depuis votre dernier échange, coloré selon le rythme que tu souhaites avec cette personne.
+Garde tes amitiés au chaud. Une web app installable qui montre, pour chaque ami, le temps écoulé depuis votre dernier échange, coloré selon le Rythme que tu souhaites avec cette personne.
 
-## Lancer en local
+En chantier : la version React est publiée en continu sur https://alexsoudant.github.io/braises/. La première version (JS natif) est archivée sur la branche `prototype`.
+
+## Développer
 
 ```bash
-npm start
+npm install
+npm run dev
 ```
 
-Puis ouvre http://localhost:5173. Aucune dépendance à installer.
+Puis ouvre http://localhost:5173/braises/.
 
 ```bash
-npm test
+npm test        # Vitest : logique et parcours d'écran
+npm run lint    # ESLint + Prettier
+npm run build   # vérification des types puis build dans dist/
 ```
 
 ## Structure
 
-- `js/model.js` : logique pure (chaleur, anniversaires, tri). C'est elle qui est testée.
-- `js/store.js` : sauvegarde dans le navigateur (`localStorage`), export et import JSON.
-- `js/app.js` : interface (liste « Registre » et fiche ami).
-- `sw.js` : cache hors ligne. **Incrémente `VERSION` à chaque mise en ligne.**
+- `src/domain/` : logique pure (Chaleur, anniversaires, tri), sans base ni DOM.
+- `src/data/` : seul accès à la base (Dexie / IndexedDB).
+- `src/ui/` : écrans React, stylés avec Tailwind (thème dans `src/index.css`).
+- `GLOSSARY.md` : vocabulaire du domaine. `docs/adr/` : décisions d'architecture.
 
-## La chaleur
+Chaque push sur `main` lance lint, tests et build dans GitHub Actions, puis publie sur Pages si tout passe.
 
-`jours depuis le dernier échange / rythme souhaité` :
+## La Chaleur
 
-| Rapport | Niveau |
-|---|---|
-| < 0,5 | Brûlant |
-| < 1 | Chaud |
-| < 1,5 | Tiède |
-| < 2,5 | Refroidi |
-| sinon, ou jamais d'échange | Glacé |
+`jours depuis le dernier échange / Rythme` :
 
-## Installer sur le téléphone
-
-L'installation demande que l'app soit servie en HTTPS (GitHub Pages, Netlify, Cloudflare Pages…). Il suffit de publier le dossier tel quel, sans étape de build.
-
-- **iPhone** : ouvrir l'adresse dans Safari, puis Partager → « Sur l'écran d'accueil ».
-- **Android** : ouvrir dans Chrome, puis menu ⋮ → « Installer l'application ».
-
-Les données restent sur l'appareil, sans compte. Pense à **Exporter une sauvegarde** (menu ⋯) de temps en temps. C'est aussi ce qui permet de passer d'un appareil à un autre.
+| Rapport                    | Niveau   |
+| -------------------------- | -------- |
+| < 0,5                      | Brûlant  |
+| < 1                        | Chaud    |
+| < 1,5                      | Tiède    |
+| < 2,5                      | Refroidi |
+| sinon, ou jamais d'échange | Glacé    |
