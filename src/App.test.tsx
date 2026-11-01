@@ -7,7 +7,7 @@ test('les exemples remplissent le Registre, les plus froids en tête', async () 
   afficherApp(new Date(2026, 9, 31));
   await userEvent.click(await screen.findByRole('button', { name: 'Essayer avec des exemples' }));
 
-  const lignes = await screen.findAllByRole('listitem');
+  const lignes = within(await screen.findByRole('list', { name: 'Amis' })).getAllByRole('listitem');
   expect(lignes).toHaveLength(6);
   expect(within(lignes[0]).getByText('Karim')).toBeInTheDocument();
   expect(within(lignes[0]).getByText('Glacé')).toBeInTheDocument();

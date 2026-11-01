@@ -4,6 +4,7 @@ import {
   chaleur,
   joursDepuis,
   joursRelatifs,
+  libelleAge,
   libelleRythme,
   prochainAnniversaire,
   saisieDepuis,
@@ -144,7 +145,7 @@ function texteAnniversaire(ami: Ami, aujourdhui: Date): string {
   if (!anniv) return 'Non renseigné';
   const date = anniv.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   const quand = anniv.jours === 0 ? 'aujourd’hui' : `dans ${anniv.jours} j`;
-  return anniv.age === null ? `${date} · ${quand}` : `${date} · ${quand} · ${anniv.age} ans`;
+  return anniv.age === null ? `${date} · ${quand}` : `${date} · ${quand} · ${libelleAge(anniv.age)}`;
 }
 
 function etSesEchanges(n: number): string {

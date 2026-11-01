@@ -36,7 +36,8 @@ test('après confirmation, l’Ami disparaît du Registre et la fiche se ferme',
   await userEvent.click(within(fiche).getByRole('button', { name: 'Supprimer définitivement' }));
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(location.hash).not.toMatch(/ami/);
+  // Le retour arrière de l'historique est asynchrone : l'adresse suit la fermeture de la fiche.
+  await waitFor(() => expect(location.hash).not.toMatch(/ami/));
   expect(screen.queryByRole('button', { name: /Camille/ })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Hugo/ })).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Fiche de Camille supprimée'));

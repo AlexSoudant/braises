@@ -140,6 +140,11 @@ function anniversaireEn(annee: number, mois: number, jour: number): Date {
   return d.getMonth() === mois - 1 ? d : new Date(annee, mois, 0);
 }
 
+/** « 1 an », « 33 ans » : le français garde le singulier pour 0 et 1. */
+export function libelleAge(age: number): string {
+  return age <= 1 ? `${age} an` : `${age} ans`;
+}
+
 export function libelleRythme(jours: number): string {
   return RYTHMES.find(([d]) => d === jours)?.[1] ?? `Tous les ${jours} j`;
 }
@@ -151,11 +156,12 @@ export function joursRelatifs(n: number): string {
   return `il y a ${Math.round(n / 30)} mois`;
 }
 
-export type Tri = 'aRelancer' | 'nom' | 'anniversaire';
+export const TRIS = ['aRelancer', 'nom', 'anniversaire'] as const;
+export type Tri = (typeof TRIS)[number];
 
 const parNom = (a: AmiSuivi, b: AmiSuivi) => a.ami.nom.localeCompare(b.ami.nom, 'fr');
 
-const TRIS: Record<Tri, (aujourdhui: Date) => (a: AmiSuivi, b: AmiSuivi) => number> = {
+const COMPARAISONS: Record<Tri, (aujourdhui: Date) => (a: AmiSuivi, b: AmiSuivi) => number> = {
   aRelancer: (t) => (a, b) => retard(b, t) - retard(a, t) || parNom(a, b),
   nom: () => parNom,
   anniversaire: (t) => (a, b) =>
@@ -174,11 +180,25 @@ export function amisVisibles(
   { tri, type, recherche }: Vue,
   aujourdhui: Date,
 ): AmiSuivi[] {
-  const q = (recherche ?? '').trim().toLocaleLowerCase('fr');
+  const q = pourRecherche(recherche ?? '');
   return suivis
     .filter((s) => !type || s.dernier?.type === type)
-    .filter((s) => !q || s.ami.nom.toLocaleLowerCase('fr').includes(q))
-    .sort(TRIS[tri](aujourdhui));
+    .filter((s) => !q || pourRecherche(s.ami.nom).includes(q))
+    .sort(COMPARAISONS[tri](aujourdhui));
+}
+
+// Lettres liées que la décomposition Unicode ne sépare pas.
+const LIGATURES: Record<string, string> = { œ: 'oe', æ: 'ae', ß: 'ss' };
+
+// « lea » trouve « Léa » et « coeur » trouve « Cœur » : on compare sans casse, accents ni ligatures
+// (lettres décomposées, marques combinantes retirées).
+function pourRecherche(texte: string): string {
+  return texte
+    .trim()
+    .toLocaleLowerCase('fr')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[œæß]/g, (l) => LIGATURES[l]);
 }
 
 /** Ce que l'utilisateur tape dans le formulaire d'un Ami, avant validation. Tous les champs sont du texte brut. */

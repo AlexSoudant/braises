@@ -106,7 +106,7 @@ test('depuis un Registre rempli, on ajoute un deuxième Ami du même nom', async
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.getAllByRole('button', { name: /Hugo/ })).toHaveLength(2);
-  expect(screen.getAllByRole('listitem')).toHaveLength(7);
+  expect(within(screen.getByRole('list', { name: 'Amis' })).getAllByRole('listitem')).toHaveLength(7);
 });
 
 test('appuyer deux fois sur Enregistrer n’ajoute l’Ami qu’une fois', async () => {

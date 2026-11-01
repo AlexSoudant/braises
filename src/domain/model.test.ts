@@ -5,6 +5,7 @@ import {
   chaleurPour,
   joursDepuis,
   joursRelatifs,
+  libelleAge,
   prochainAnniversaire,
   saisieDepuis,
   suivre,
@@ -90,6 +91,63 @@ test('tri « à relancer » : les plus en retard d’abord, jamais vus en tête'
   expect(ids({ tri: 'aRelancer' })).toEqual(['3', '2', '1']);
   expect(ids({ tri: 'aRelancer', type: 'tel' })).toEqual(['2']);
   expect(ids({ tri: 'nom', recherche: 'b' })).toEqual(['2']);
+});
+
+describe('Registre', () => {
+  const noms = (amis: Ami[], vue: Vue) =>
+    amisVisibles(suivre(amis, []), vue, aujourdhui).map((s) => s.ami.nom);
+
+  test('tri par nom dans l’ordre alphabétique français, accents compris', () => {
+    const amis = ['Fanny', 'éric', 'Émile', 'Eddy', 'zoé'].map((nom, i) => ami({ id: String(i), nom }));
+
+    expect(noms(amis, { tri: 'nom' })).toEqual(['Eddy', 'Émile', 'éric', 'Fanny', 'zoé']);
+  });
+
+  test('tri par anniversaire : le plus proche d’abord, celui du jour en tête, les inconnus à la fin', () => {
+    const amis = [
+      ami({ id: '1', nom: 'Sans date' }),
+      ami({ id: '2', nom: 'Dans un mois', anniversaire: '1990-11-30' }),
+      ami({ id: '3', nom: 'Aujourd’hui', anniversaire: '--10-31' }),
+      ami({ id: '4', nom: 'Hier, donc dans un an', anniversaire: '1985-10-30' }),
+      ami({ id: '5', nom: 'Demain', anniversaire: '2001-11-01' }),
+      ami({ id: '6', nom: 'Aussi sans date' }),
+    ];
+
+    expect(noms(amis, { tri: 'anniversaire' })).toEqual([
+      'Aujourd’hui',
+      'Demain',
+      'Dans un mois',
+      'Hier, donc dans un an',
+      'Aussi sans date',
+      'Sans date',
+    ]);
+  });
+
+  test.each([
+    ['lea', ['Léa', 'Lea']],
+    ['LÉA', ['Léa', 'Lea']],
+    ['ines', ['Inès']],
+    ['  INÈS ', ['Inès']],
+    ['e', ['Léa', 'Lea', 'Inès', 'Cœur', 'Lætitia']],
+    ['zoe', []],
+    ['coeur', ['Cœur']],
+    ['laetitia', ['Lætitia']],
+  ])('la recherche « %s » ignore majuscules et accents', (recherche, attendus) => {
+    const amis = ['Léa', 'Lea', 'Inès', 'Karim', 'Cœur', 'Lætitia'].map((nom, i) =>
+      ami({ id: String(i), nom }),
+    );
+
+    expect(noms(amis, { tri: 'nom', recherche }).sort()).toEqual([...attendus].sort());
+  });
+});
+
+test.each([
+  [0, '0 an'],
+  [1, '1 an'],
+  [2, '2 ans'],
+  [33, '33 ans'],
+])('âge de %i : « %s »', (age, libelle) => {
+  expect(libelleAge(age)).toBe(libelle);
 });
 
 test('libellés relatifs', () => {

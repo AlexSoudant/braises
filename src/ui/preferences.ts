@@ -1,7 +1,7 @@
 // Préférences et repères de l'app dans localStorage : hors des données métier et de la sauvegarde.
 // Toujours dans un try/catch : le stockage peut être plein, désactivé ou absent (navigation privée).
 import { useSyncExternalStore } from 'react';
-import type { DateJour } from '../domain/model';
+import { TRIS, type DateJour, type Tri } from '../domain/model';
 
 const DERNIER_EXPORT = 'braises.dernierExport';
 
@@ -61,5 +61,25 @@ export function retenirInstallationMasquee(): void {
     localStorage.setItem(INSTALLATION_MASQUEE, 'oui');
   } catch {
     // Sans stockage, le bandeau reviendra au prochain lancement.
+  }
+}
+
+const TRI = 'braises.tri';
+
+/** Le tri choisi dans le Registre ; « à relancer » par défaut ou si la valeur retenue est inconnue. */
+export function lireTri(): Tri {
+  try {
+    const tri = localStorage.getItem(TRI);
+    return TRIS.find((t) => t === tri) ?? 'aRelancer';
+  } catch {
+    return 'aRelancer';
+  }
+}
+
+export function retenirTri(tri: Tri): void {
+  try {
+    localStorage.setItem(TRI, tri);
+  } catch {
+    // Sans stockage, le Registre reviendra au tri par défaut au prochain lancement.
   }
 }

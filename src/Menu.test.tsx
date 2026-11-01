@@ -125,7 +125,10 @@ test('supprimer un Ami supprime aussi ses Échanges : l’export n’en garde au
   expect(sauvegarde.echanges.every((e: { amiId: string }) => ids.has(e.amiId))).toBe(true);
 });
 
-const lignesDuRegistre = () => screen.getAllByRole('listitem').map((li) => li.textContent);
+const lignesDuRegistre = () =>
+  within(screen.getByRole('list', { name: 'Amis' }))
+    .getAllByRole('listitem')
+    .map((li) => li.textContent);
 
 async function choisirFichier(menu: HTMLElement, fichier: File) {
   await userEvent.upload(within(menu).getByLabelText('Importer une sauvegarde'), fichier);
