@@ -14,6 +14,7 @@ import {
 import { BadgeChaleur } from './BadgeChaleur';
 import { FormulaireAmi } from './FormulaireAmi';
 import { FormulaireEchange } from './FormulaireEchange';
+import { Historique } from './Historique';
 import { allerAuRegistre } from './navigation';
 import { Panneau } from './Panneau';
 
@@ -38,7 +39,7 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   }, [resume]);
 
   if (!resume) return null;
-  const { suivi, nombreEchanges } = resume;
+  const { suivi, historique } = resume;
   const niveau = chaleur(suivi, aujourdhui);
   const jours = joursDepuis(suivi, aujourdhui);
 
@@ -72,10 +73,11 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
         <dt className="text-discret">Anniversaire</dt>
         <dd>{texteAnniversaire(suivi.ami, aujourdhui)}</dd>
         <dt className="text-discret">Échanges</dt>
-        <dd>{texteNombreEchanges(nombreEchanges)}</dd>
+        <dd>{texteNombreEchanges(historique.length)}</dd>
       </dl>
       {suivi.ami.notes && <p className="whitespace-pre-line text-discret">{suivi.ami.notes}</p>}
       <FormulaireEchange amiId={id} aujourdhui={aujourdhui} />
+      <Historique echanges={historique} />
       <div className="flex justify-end">
         <button
           ref={boutonModifier}

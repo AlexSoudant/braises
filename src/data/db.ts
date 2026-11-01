@@ -15,9 +15,10 @@ export const db = new Dexie('braises') as Dexie & {
   echanges: EntityTable<Echange, 'id'>;
 };
 
-db.version(1).stores({
+// La version 2 ajoute l'index composé qui lit l'historique d'un Ami déjà trié ; les données sont conservées.
+db.version(2).stores({
   amis: 'id, nom',
-  echanges: 'id, amiId, date',
+  echanges: 'id, amiId, date, [amiId+date]',
 });
 
 /** Tous les Amis avec leur dernier Échange ; `undefined` tant que la base n'a pas répondu. */
@@ -27,16 +28,21 @@ export function useRegistre(): AmiSuivi[] | undefined {
 
 export interface ResumeAmi {
   suivi: AmiSuivi;
-  nombreEchanges: number;
+  /** Ses Échanges, du plus récent au plus ancien. */
+  historique: Echange[];
 }
 
-/** Un Ami et le résumé de ses Échanges ; `null` s'il n'existe pas, `undefined` tant que la base n'a pas répondu. */
+/** Un Ami et ses Échanges ; `null` s'il n'existe pas, `undefined` tant que la base n'a pas répondu. */
 export function useResumeAmi(id: string): ResumeAmi | null | undefined {
   return useLiveQuery(async () => {
     const ami = await db.amis.get(id);
     if (!ami) return null;
-    const echanges = await db.echanges.where('amiId').equals(id).toArray();
-    return { suivi: suivre([ami], echanges)[0], nombreEchanges: echanges.length };
+    const historique = await db.echanges
+      .where('[amiId+date]')
+      .between([id, Dexie.minKey], [id, Dexie.maxKey])
+      .reverse()
+      .toArray();
+    return { suivi: suivre([ami], historique)[0], historique };
   }, [id]);
 }
 
@@ -57,6 +63,20 @@ export async function noterEchange(amiId: string, echange: Omit<Echange, 'id' | 
   const id = crypto.randomUUID();
   await db.echanges.add({ ...echange, id, amiId });
   return id;
+}
+
+/** Supprime un Échange et le renvoie, pour pouvoir le restaurer. */
+export async function supprimerEchange(id: string): Promise<Echange | undefined> {
+  return db.transaction('rw', db.echanges, async () => {
+    const echange = await db.echanges.get(id);
+    await db.echanges.delete(id);
+    return echange;
+  });
+}
+
+/** Réinsère un Échange supprimé tel quel, avec le même identifiant. */
+export async function restaurerEchange(echange: Echange): Promise<void> {
+  await db.echanges.put(echange);
 }
 
 export async function chargerExemples(aujourdhui: Date): Promise<void> {

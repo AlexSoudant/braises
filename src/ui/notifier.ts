@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 export interface Notification {
   message: string;
   /** Action proposée dans la notification, par exemple « Annuler ». */
-  action?: { libelle: string; faire: () => void };
+  action?: { libelle: string; faire: () => void | Promise<void> };
 }
 
 export const ContexteNotifier = createContext<(n: Notification) => void>(() => {});

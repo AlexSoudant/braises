@@ -61,7 +61,8 @@ function Toast() {
               type="button"
               className="font-semibold underline"
               onClick={() => {
-                courante.action!.faire();
+                // L'action gère elle-même ses échecs ; le toast se ferme sans l'attendre.
+                void courante.action!.faire();
                 fermer();
               }}
             >
