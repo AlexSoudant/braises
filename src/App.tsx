@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { versDateJour } from './domain/model';
+import { BandeauInstallation } from './ui/BandeauInstallation';
 import { FicheAmi } from './ui/FicheAmi';
+import { demanderStockagePersistant } from './ui/installation';
 import { Menu } from './ui/Menu';
 import { ouvrirMenu, useAdresse } from './ui/navigation';
 import { Notifications } from './ui/Notification';
@@ -10,6 +12,10 @@ import { Registre } from './ui/Registre';
 export function App() {
   const aujourdhui = useAujourdhui();
   const adresse = useAdresse();
+  const boutonMenu = useRef<HTMLButtonElement>(null);
+
+  useEffect(demanderStockagePersistant, []);
+
   return (
     <Notifications>
       <main className="mx-auto grid max-w-3xl gap-5 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-10">
@@ -19,6 +25,7 @@ export function App() {
             <p className="mt-1 text-discret">Garde tes amitiés au chaud.</p>
           </div>
           <button
+            ref={boutonMenu}
             type="button"
             aria-label="Menu"
             onClick={ouvrirMenu}
@@ -27,6 +34,7 @@ export function App() {
             <span aria-hidden="true">⋯</span>
           </button>
         </header>
+        <BandeauInstallation focusEnPartant={boutonMenu} />
         <Registre aujourdhui={aujourdhui} />
         {adresse.page === 'ami' && <FicheAmi key={adresse.id} id={adresse.id} aujourdhui={aujourdhui} />}
         {adresse.page === 'nouvelAmi' && <NouvelAmi aujourdhui={aujourdhui} />}

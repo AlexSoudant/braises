@@ -45,3 +45,21 @@ export function retenirDernierExport(jour: DateJour): void {
     // Sans stockage, l'app oublie seulement la date du dernier export.
   }
 }
+
+const INSTALLATION_MASQUEE = 'braises.installationMasquee';
+
+export function lireInstallationMasquee(): boolean {
+  try {
+    return localStorage.getItem(INSTALLATION_MASQUEE) === 'oui';
+  } catch {
+    return false;
+  }
+}
+
+export function retenirInstallationMasquee(): void {
+  try {
+    localStorage.setItem(INSTALLATION_MASQUEE, 'oui');
+  } catch {
+    // Sans stockage, le bandeau reviendra au prochain lancement.
+  }
+}
