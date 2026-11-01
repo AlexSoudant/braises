@@ -23,3 +23,7 @@ _Avoid_ : Cadence, fréquence
 **Chaleur** :
 L'état d'une amitié, obtenu en rapportant les jours écoulés depuis le dernier Échange au Rythme : Brûlant, Chaud, Tiède, Refroidi ou Glacé.
 _Avoid_ : Température, score, urgence
+
+**Anniversaire** :
+La date de naissance d'un Ami : jour et mois, l'année pouvant rester inconnue. À ne pas confondre avec le Type d'échange « anniversaire », qui désigne un Échange fait à l'occasion d'une fête.
+_Avoid_ : Date de naissance, fête

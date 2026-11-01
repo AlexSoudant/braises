@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { versDateJour } from './domain/model';
 import { FicheAmi } from './ui/FicheAmi';
 import { useAdresse } from './ui/navigation';
+import { NouvelAmi } from './ui/NouvelAmi';
 import { Registre } from './ui/Registre';
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
       </header>
       <Registre aujourdhui={aujourdhui} />
       {adresse.page === 'ami' && <FicheAmi key={adresse.id} id={adresse.id} aujourdhui={aujourdhui} />}
+      {adresse.page === 'nouvelAmi' && <NouvelAmi aujourdhui={aujourdhui} />}
     </main>
   );
 }

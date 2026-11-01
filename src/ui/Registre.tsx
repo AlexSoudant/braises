@@ -10,18 +10,29 @@ import {
   type AmiSuivi,
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
-import { ouvrirFiche } from './navigation';
+import { ouvrirCreation, ouvrirFiche } from './navigation';
 
 export function Registre({ aujourdhui }: { aujourdhui: Date }) {
   const suivis = useRegistre();
   if (!suivis) return null;
   if (suivis.length === 0) return <Vide aujourdhui={aujourdhui} />;
   return (
-    <ul className="grid gap-2">
-      {amisVisibles(suivis, { tri: 'aRelancer' }, aujourdhui).map((s) => (
-        <Ligne key={s.ami.id} suivi={s} aujourdhui={aujourdhui} />
-      ))}
-    </ul>
+    <section className="grid gap-3">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={ouvrirCreation}
+          className="rounded-lg bg-encre px-4 py-2 font-semibold text-fond"
+        >
+          Ajouter un ami
+        </button>
+      </div>
+      <ul className="grid gap-2">
+        {amisVisibles(suivis, { tri: 'aRelancer' }, aujourdhui).map((s) => (
+          <Ligne key={s.ami.id} suivi={s} aujourdhui={aujourdhui} />
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -64,6 +75,13 @@ function Vide({ aujourdhui }: { aujourdhui: Date }) {
       <button
         type="button"
         className="rounded-lg bg-encre px-4 py-2 font-semibold text-fond"
+        onClick={ouvrirCreation}
+      >
+        Ajouter mon premier ami
+      </button>
+      <button
+        type="button"
+        className="rounded-lg border border-ligne px-4 py-2 font-semibold"
         onClick={() => void chargerExemples(aujourdhui)}
       >
         Essayer avec des exemples

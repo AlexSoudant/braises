@@ -1,7 +1,10 @@
-// Routage par le hash, sans bibliothèque : `#/` pour le Registre, `#/ami/<id>` pour une fiche.
+// Routage par le hash, sans bibliothèque : `#/` pour le Registre, `#/ami/<id>` pour une fiche,
+// `#/ami/nouveau` pour la création d'un Ami.
 import { useSyncExternalStore } from 'react';
 
-export type Adresse = { page: 'registre' } | { page: 'ami'; id: string };
+export type Adresse = { page: 'registre' } | { page: 'ami'; id: string } | { page: 'nouvelAmi' };
+
+const NOUVEAU = 'nouveau';
 
 const abonnes = new Set<() => void>();
 const prevenir = () => abonnes.forEach((f) => f());
@@ -26,7 +29,8 @@ const lireHash = () => location.hash;
 export function useAdresse(): Adresse {
   const hash = useSyncExternalStore(sAbonner, lireHash);
   const ami = /^#\/ami\/(.+)$/.exec(hash);
-  return ami ? { page: 'ami', id: decoder(ami[1]) } : { page: 'registre' };
+  if (!ami) return { page: 'registre' };
+  return ami[1] === NOUVEAU ? { page: 'nouvelAmi' } : { page: 'ami', id: decoder(ami[1]) };
 }
 
 // Une adresse mal encodée est gardée telle quelle : aucun Ami ne la porte, la fiche renverra au Registre.
@@ -41,6 +45,18 @@ function decoder(id: string): string {
 /** Ouvre une fiche en ajoutant une entrée d'historique, pour que « retour » la referme. */
 export function ouvrirFiche(id: string) {
   history.pushState({ ficheOuverteDansLApp: true }, '', `#/ami/${encodeURIComponent(id)}`);
+  prevenir();
+}
+
+/** Ouvre le formulaire de création d'un Ami, comme une fiche. */
+export function ouvrirCreation() {
+  history.pushState({ ficheOuverteDansLApp: true }, '', `#/ami/${NOUVEAU}`);
+  prevenir();
+}
+
+/** Remplace la fiche affichée par celle d'un autre Ami (après une création), sans nouvelle entrée d'historique. */
+export function remplacerParFiche(id: string) {
+  history.replaceState(history.state, '', `#/ami/${encodeURIComponent(id)}`);
   prevenir();
 }
 

@@ -14,10 +14,13 @@ export type TypeEchange = keyof typeof TYPES_ECHANGE;
 /** Date au jour, sans heure : `AAAA-MM-JJ`. */
 export type DateJour = string;
 
+/** Date d'anniversaire : `AAAA-MM-JJ`, ou `--MM-JJ` quand l'année de naissance est inconnue. */
+export type Anniversaire = string;
+
 export interface Ami {
   id: string;
   nom: string;
-  anniversaire?: DateJour;
+  anniversaire?: Anniversaire;
   /** Intervalle souhaité entre deux Échanges, en jours. */
   rythme: number;
   notes?: string;
@@ -107,22 +110,29 @@ export function chaleur(suivi: AmiSuivi, aujourdhui: Date): Chaleur {
 export interface ProchainAnniversaire {
   date: Date;
   jours: number;
-  age: number;
+  /** `null` quand l'année de naissance est inconnue. */
+  age: number | null;
 }
 
 export function prochainAnniversaire(ami: Ami, aujourdhui: Date): ProchainAnniversaire | null {
   if (!ami.anniversaire) return null;
-  const naissance = lireDateJour(ami.anniversaire);
+  const { annee, mois, jour } = lireAnniversaire(ami.anniversaire);
   const t = debutDuJour(aujourdhui);
-  let date = anniversaireEn(naissance, t.getFullYear());
-  if (date < t) date = anniversaireEn(naissance, t.getFullYear() + 1);
-  return { date, jours: joursEntre(date, t), age: date.getFullYear() - naissance.getFullYear() };
+  let date = anniversaireEn(t.getFullYear(), mois, jour);
+  if (date < t) date = anniversaireEn(t.getFullYear() + 1, mois, jour);
+  return { date, jours: joursEntre(date, t), age: annee === null ? null : date.getFullYear() - annee };
+}
+
+/** Mois de 1 à 12. */
+function lireAnniversaire(a: Anniversaire): { annee: number | null; mois: number; jour: number } {
+  const [, annee, mois, jour] = /^(?:(\d{4})|-)-(\d{2})-(\d{2})$/.exec(a)!;
+  return { annee: annee ? Number(annee) : null, mois: Number(mois), jour: Number(jour) };
 }
 
 // Un 29 février est fêté le 28 les années non bissextiles.
-function anniversaireEn(naissance: Date, annee: number): Date {
-  const d = new Date(annee, naissance.getMonth(), naissance.getDate());
-  return d.getMonth() === naissance.getMonth() ? d : new Date(annee, naissance.getMonth() + 1, 0);
+function anniversaireEn(annee: number, mois: number, jour: number): Date {
+  const d = new Date(annee, mois - 1, jour);
+  return d.getMonth() === mois - 1 ? d : new Date(annee, mois, 0);
 }
 
 export function libelleRythme(jours: number): string {
@@ -164,4 +174,73 @@ export function amisVisibles(
     .filter((s) => !type || s.dernier?.type === type)
     .filter((s) => !q || s.ami.nom.toLocaleLowerCase('fr').includes(q))
     .sort(TRIS[tri](aujourdhui));
+}
+
+/** Ce que l'utilisateur tape dans le formulaire d'un Ami, avant validation. Tous les champs sont du texte brut. */
+export interface SaisieAmi {
+  nom: string;
+  /** Nombre de jours. */
+  rythme: string;
+  /** Jour, mois (1 à 12) et année facultative de l'anniversaire ; tous vides s'il n'est pas renseigné. */
+  jour: string;
+  mois: string;
+  annee: string;
+  notes: string;
+}
+
+/** Saisie d'un nouvel Ami : rien de renseigné, Rythme mensuel par défaut. */
+export const SAISIE_VIDE: SaisieAmi = { nom: '', rythme: '30', jour: '', mois: '', annee: '', notes: '' };
+
+/** Pré-remplit la saisie avec un Ami existant, pour le modifier. */
+export function saisieDepuis(ami: Ami): SaisieAmi {
+  const anniv = ami.anniversaire ? lireAnniversaire(ami.anniversaire) : null;
+  return {
+    nom: ami.nom,
+    rythme: String(ami.rythme),
+    jour: anniv ? String(anniv.jour) : '',
+    mois: anniv ? String(anniv.mois) : '',
+    annee: anniv?.annee ? String(anniv.annee) : '',
+    notes: ami.notes ?? '',
+  };
+}
+
+export type ErreursAmi = Partial<Record<'nom' | 'rythme' | 'anniversaire', string>>;
+
+export type ResultatSaisieAmi = { ok: true; ami: Omit<Ami, 'id'> } | { ok: false; erreurs: ErreursAmi };
+
+export function validerAmi(saisie: SaisieAmi, aujourdhui: Date): ResultatSaisieAmi {
+  const erreurs: ErreursAmi = {};
+  const nom = saisie.nom.trim();
+  if (!nom) erreurs.nom = 'Le nom est obligatoire.';
+  // Chiffres seulement : `Number` accepterait aussi « 1e1 » ou « 0x10 ».
+  const rythme = /^\d+$/.test(saisie.rythme.trim()) ? Number(saisie.rythme) : 0;
+  if (rythme <= 0) erreurs.rythme = 'Le Rythme doit être un nombre entier de jours, supérieur à 0.';
+  const anniversaire = validerAnniversaire(saisie, aujourdhui);
+  if ('erreur' in anniversaire) erreurs.anniversaire = anniversaire.erreur;
+  if (Object.keys(erreurs).length) return { ok: false, erreurs };
+
+  const ami: Omit<Ami, 'id'> = { nom, rythme };
+  if ('valeur' in anniversaire && anniversaire.valeur) ami.anniversaire = anniversaire.valeur;
+  const notes = saisie.notes.trim();
+  if (notes) ami.notes = notes;
+  return { ok: true, ami };
+}
+
+function validerAnniversaire(
+  { jour, mois, annee }: SaisieAmi,
+  aujourdhui: Date,
+): { valeur?: Anniversaire } | { erreur: string } {
+  const [j, m, a] = [jour.trim(), mois.trim(), annee.trim()];
+  if (!j && !m && !a) return {};
+  if (!j || !m) return { erreur: 'Indique le jour et le mois de l’anniversaire.' };
+  if (a && !/^\d{4}$/.test(a)) return { erreur: 'L’année s’écrit sur 4 chiffres.' };
+  // Une année antérieure serait aussi mal comprise par `Date` (0050 → 1950).
+  if (a && Number(a) < 1900) return { erreur: 'Cette année n’est pas plausible.' };
+  // Sans année, on vérifie la date sur une année bissextile pour accepter le 29 février.
+  const date = new Date(a ? Number(a) : 2000, Number(m) - 1, Number(j));
+  if (date.getMonth() !== Number(m) - 1 || date.getDate() !== Number(j))
+    return { erreur: 'Cette date n’existe pas.' };
+  if (a && date > debutDuJour(aujourdhui)) return { erreur: 'Cette date est dans le futur.' };
+  const mmjj = `${String(m).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
+  return { valeur: a ? `${a}-${mmjj}` : `--${mmjj}` };
 }

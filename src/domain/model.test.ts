@@ -6,9 +6,12 @@ import {
   joursDepuis,
   joursRelatifs,
   prochainAnniversaire,
+  saisieDepuis,
   suivre,
+  validerAmi,
   type Ami,
   type Echange,
+  type SaisieAmi,
   type Vue,
 } from './model';
 
@@ -60,6 +63,12 @@ describe('prochain anniversaire', () => {
     expect(resume()).toBeNull();
   });
 
+  test('sans année : les jours restants sont connus, pas l’âge', () => {
+    expect(resume('--11-04')).toEqual({ jours: 4, age: null });
+    expect(resume('--10-31')).toEqual({ jours: 0, age: null });
+    expect(resume('--02-17')).toEqual({ jours: 109, age: null });
+  });
+
   test('un 29 février est fêté le 28 les années non bissextiles', () => {
     const p = prochainAnniversaire(ami({ anniversaire: '2000-02-29' }), aujourdhui)!;
     expect([p.date.getMonth(), p.date.getDate()]).toEqual([1, 28]);
@@ -86,4 +95,81 @@ test('libellés relatifs', () => {
   expect(joursRelatifs(1)).toBe('hier');
   expect(joursRelatifs(12)).toBe('il y a 12 j');
   expect(joursRelatifs(95)).toBe('il y a 3 mois');
+});
+
+describe('validation d’un Ami', () => {
+  const saisie = (champs: Partial<SaisieAmi> = {}): SaisieAmi => ({
+    nom: 'Léa',
+    rythme: '30',
+    jour: '',
+    mois: '',
+    annee: '',
+    notes: '',
+    ...champs,
+  });
+
+  test('un nom et un Rythme suffisent ; le nom est nettoyé des espaces', () => {
+    expect(validerAmi(saisie({ nom: '  Léa ' }), aujourdhui)).toEqual({
+      ok: true,
+      ami: { nom: 'Léa', rythme: 30 },
+    });
+  });
+
+  test('l’anniversaire se saisit avec ou sans année', () => {
+    const anniversaire = (jour: string, mois: string, annee = '') => {
+      const r = validerAmi(saisie({ jour, mois, annee }), aujourdhui);
+      return r.ok ? r.ami.anniversaire : r.erreurs.anniversaire;
+    };
+    expect(anniversaire('4', '11', '1993')).toBe('1993-11-04');
+    expect(anniversaire('4', '11')).toBe('--11-04');
+    expect(anniversaire('29', '2')).toBe('--02-29');
+    expect(anniversaire('29', '2', '2000')).toBe('2000-02-29');
+    expect(anniversaire('', '')).toBeUndefined();
+  });
+
+  test.each([
+    ['31', '2', '', 'Cette date n’existe pas.'],
+    ['29', '2', '2001', 'Cette date n’existe pas.'],
+    ['4', '', '', 'Indique le jour et le mois de l’anniversaire.'],
+    ['', '', '1993', 'Indique le jour et le mois de l’anniversaire.'],
+    ['4', '11', '93', 'L’année s’écrit sur 4 chiffres.'],
+    ['4', '11', '0050', 'Cette année n’est pas plausible.'],
+    ['4', '11', '2027', 'Cette date est dans le futur.'],
+  ])('refuse l’anniversaire %s/%s/%s', (jour, mois, annee, message) => {
+    const r = validerAmi(saisie({ jour, mois, annee }), new Date(2026, 9, 31));
+    expect(!r.ok && r.erreurs.anniversaire).toBe(message);
+  });
+
+  test('les notes sont nettoyées, et omises si vides', () => {
+    const notes = (n: string) => {
+      const r = validerAmi(saisie({ notes: n }), aujourdhui);
+      return r.ok && r.ami.notes;
+    };
+    expect(notes('  Aime le jazz. ')).toBe('Aime le jazz.');
+    expect(notes('   ')).toBeUndefined();
+  });
+
+  test('refuse un nom vide', () => {
+    expect(validerAmi(saisie({ nom: '   ' }), aujourdhui)).toEqual({
+      ok: false,
+      erreurs: { nom: 'Le nom est obligatoire.' },
+    });
+  });
+
+  test.each(['0', '-7', '2.5', 'abc', '', '1e1', '0x10'])('refuse le Rythme « %s »', (rythme) => {
+    const resultat = validerAmi(saisie({ rythme }), aujourdhui);
+    expect(resultat.ok).toBe(false);
+    expect(!resultat.ok && resultat.erreurs.rythme).toMatch(/entier de jours/);
+  });
+});
+
+test('modifier un Ami sans rien changer redonne le même Ami', () => {
+  const amis: Ami[] = [
+    { id: 'a', nom: 'Léa', rythme: 21, anniversaire: '1995-11-12', notes: 'Coloc' },
+    { id: 'b', nom: 'Sami', rythme: 30, anniversaire: '--02-29' },
+    { id: 'c', nom: 'Paul', rythme: 7 },
+  ];
+  for (const { id, ...ami } of amis) {
+    expect(validerAmi(saisieDepuis({ id, ...ami }), aujourdhui)).toEqual({ ok: true, ami });
+  }
 });

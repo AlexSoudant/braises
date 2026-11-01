@@ -1,18 +1,33 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { useResumeAmi } from '../data/db';
+import { useEffect, useRef, useState } from 'react';
+import { modifierAmi, useResumeAmi } from '../data/db';
 import {
   chaleur,
   joursDepuis,
   joursRelatifs,
   libelleRythme,
   prochainAnniversaire,
+  saisieDepuis,
   type Ami,
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
-import { allerAuRegistre, fermerFiche } from './navigation';
+import { FormulaireAmi } from './FormulaireAmi';
+import { allerAuRegistre } from './navigation';
+import { Panneau } from './Panneau';
 
 export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   const resume = useResumeAmi(id);
+  const [enModification, setEnModification] = useState(false);
+  const boutonModifier = useRef<HTMLButtonElement>(null);
+  const quitterModification = useRef(false);
+
+  // En sortant du formulaire, le focus revient sur « Modifier » au lieu de se perdre dans la page.
+  useEffect(() => {
+    if (!enModification && quitterModification.current) boutonModifier.current?.focus();
+  }, [enModification]);
+  const terminerModification = () => {
+    quitterModification.current = true;
+    setEnModification(false);
+  };
 
   // Adresse d'un Ami qui n'existe pas (supprimé, lien périmé) : retour au Registre.
   useEffect(() => {
@@ -23,6 +38,22 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   const { suivi, nombreEchanges } = resume;
   const niveau = chaleur(suivi, aujourdhui);
   const jours = joursDepuis(suivi, aujourdhui);
+
+  if (enModification) {
+    return (
+      <Panneau titre={suivi.ami.nom}>
+        <FormulaireAmi
+          initial={saisieDepuis(suivi.ami)}
+          aujourdhui={aujourdhui}
+          onEnregistrer={async (ami) => {
+            await modifierAmi(id, ami);
+            terminerModification();
+          }}
+          onAnnuler={terminerModification}
+        />
+      </Panneau>
+    );
+  }
 
   return (
     <Panneau titre={suivi.ami.nom}>
@@ -40,6 +71,17 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
         <dt className="text-discret">Échanges</dt>
         <dd>{texteNombreEchanges(nombreEchanges)}</dd>
       </dl>
+      {suivi.ami.notes && <p className="whitespace-pre-line text-discret">{suivi.ami.notes}</p>}
+      <div className="flex justify-end">
+        <button
+          ref={boutonModifier}
+          type="button"
+          onClick={() => setEnModification(true)}
+          className="rounded-lg border border-ligne px-4 py-2 font-semibold"
+        >
+          Modifier
+        </button>
+      </div>
     </Panneau>
   );
 }
@@ -49,61 +91,10 @@ function texteAnniversaire(ami: Ami, aujourdhui: Date): string {
   if (!anniv) return 'Non renseigné';
   const date = anniv.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   const quand = anniv.jours === 0 ? 'aujourd’hui' : `dans ${anniv.jours} j`;
-  return `${date} · ${quand} · ${anniv.age} ans`;
+  return anniv.age === null ? `${date} · ${quand}` : `${date} · ${quand} · ${anniv.age} ans`;
 }
 
 function texteNombreEchanges(n: number): string {
   if (n === 0) return 'Aucun échange';
   return n === 1 ? '1 échange' : `${n} échanges`;
-}
-
-/** Dialogue modal natif : panneau par le bas sur téléphone, centré sur grand écran. */
-function Panneau({ titre, children }: { titre: string; children: ReactNode }) {
-  const ref = useRef<HTMLDialogElement>(null);
-
-  // Effet de mise en page : la fermeture a lieu avant le retrait du DOM, ce qui laisse le navigateur
-  // rendre le focus à l'élément qui avait ouvert la fiche.
-  useLayoutEffect(() => {
-    const dialogue = ref.current!;
-    dialogue.showModal();
-    return () => dialogue.close();
-  }, []);
-
-  return (
-    <dialog
-      ref={ref}
-      aria-labelledby="titre-fiche"
-      // Échap déclenche « cancel » : on laisse la navigation fermer la fiche.
-      onCancel={(e) => {
-        e.preventDefault();
-        fermerFiche();
-      }}
-      // Fermeture décidée par le navigateur lui-même : on remet l'adresse en accord. L'événement
-      // arrive en différé : s'il suit un démontage/remontage (StrictMode), le dialogue est déjà rouvert.
-      onClose={(e) => {
-        if (!e.currentTarget.open) fermerFiche();
-      }}
-      // Un clic sur le fond (hors du contenu) vise le dialogue lui-même.
-      onClick={(e) => {
-        if (e.target === e.currentTarget) fermerFiche();
-      }}
-      className="m-0 mt-auto max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-2xl bg-surface p-0 text-encre backdrop:bg-black/45 sm:m-auto sm:max-w-lg sm:rounded-2xl"
-    >
-      <div className="grid gap-5 p-5 pr-[max(1.25rem,env(safe-area-inset-right))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))]">
-        <header className="flex items-start justify-between gap-3">
-          <h2 id="titre-fiche" className="font-titre text-2xl font-extrabold">
-            {titre}
-          </h2>
-          <button
-            type="button"
-            onClick={fermerFiche}
-            className="rounded-lg border border-ligne px-3 py-1.5 text-sm font-semibold"
-          >
-            Fermer
-          </button>
-        </header>
-        {children}
-      </div>
-    </dialog>
-  );
 }

@@ -40,6 +40,18 @@ export function useResumeAmi(id: string): ResumeAmi | null | undefined {
   }, [id]);
 }
 
+/** Enregistre un nouvel Ami et renvoie son identifiant. */
+export async function ajouterAmi(ami: Omit<Ami, 'id'>): Promise<string> {
+  const id = crypto.randomUUID();
+  await db.amis.add({ ...ami, id });
+  return id;
+}
+
+/** Remplace toutes les infos d'un Ami ; un anniversaire ou des notes absents sont effacés. */
+export async function modifierAmi(id: string, ami: Omit<Ami, 'id'>): Promise<void> {
+  await db.amis.put({ ...ami, id });
+}
+
 export async function chargerExemples(aujourdhui: Date): Promise<void> {
   const ilYa = (n: number) =>
     versDateJour(new Date(aujourdhui.getFullYear(), aujourdhui.getMonth(), aujourdhui.getDate() - n));
