@@ -2,15 +2,15 @@ import { useEffect, useRef } from 'react';
 import { MessageEchec } from './formulaire';
 import { useEnvoi } from './saisie';
 
-/** Demande de confirmer la suppression d'un Ami ; le focus part sur « Annuler », le choix sans risque. */
-export function ConfirmerSuppression({
-  nom,
-  nombreEchanges,
+/** Demande de confirmer une action définitive ; le focus part sur « Annuler », le choix sans risque. */
+export function Confirmation({
+  question,
+  libelleConfirmer,
   onConfirmer,
   onAnnuler,
 }: {
-  nom: string;
-  nombreEchanges: number;
+  question: string;
+  libelleConfirmer: string;
   onConfirmer: () => Promise<void>;
   onAnnuler: () => void;
 }) {
@@ -18,16 +18,9 @@ export function ConfirmerSuppression({
   const { envoyer, echec } = useEnvoi();
   useEffect(() => annuler.current?.focus(), []);
 
-  const etSesEchanges =
-    nombreEchanges === 0
-      ? ''
-      : nombreEchanges === 1
-        ? ' et son échange'
-        : ` et ses ${nombreEchanges} échanges`;
-
   return (
     <div className="grid gap-4">
-      <p>{`Supprimer ${nom}${etSesEchanges} ? C’est définitif.`}</p>
+      <p>{question}</p>
       {echec && <MessageEchec />}
       <div className="flex justify-end gap-2">
         <button
@@ -43,7 +36,7 @@ export function ConfirmerSuppression({
           onClick={() => void envoyer(onConfirmer)}
           className="rounded-lg bg-danger px-4 py-2 font-semibold text-fond"
         >
-          Supprimer définitivement
+          {libelleConfirmer}
         </button>
       </div>
     </div>

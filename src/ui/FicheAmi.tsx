@@ -12,11 +12,11 @@ import {
   type AmiSuivi,
 } from '../domain/model';
 import { BadgeChaleur } from './BadgeChaleur';
-import { ConfirmerSuppression } from './ConfirmerSuppression';
+import { Confirmation } from './Confirmation';
 import { FormulaireAmi } from './FormulaireAmi';
 import { FormulaireEchange } from './FormulaireEchange';
 import { Historique } from './Historique';
-import { allerAuRegistre, fermerFiche } from './navigation';
+import { allerAuRegistre, fermerPanneau } from './navigation';
 import { useNotifier } from './notifier';
 import { Panneau } from './Panneau';
 
@@ -72,9 +72,9 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
   if (mode === 'suppression') {
     return (
       <Panneau titre={suivi.ami.nom}>
-        <ConfirmerSuppression
-          nom={suivi.ami.nom}
-          nombreEchanges={historique.length}
+        <Confirmation
+          question={`Supprimer ${suivi.ami.nom}${etSesEchanges(historique.length)} ? C’est définitif.`}
+          libelleConfirmer="Supprimer définitivement"
           onConfirmer={async () => {
             supprime.current = true;
             try {
@@ -83,7 +83,7 @@ export function FicheAmi({ id, aujourdhui }: { id: string; aujourdhui: Date }) {
               supprime.current = false;
               throw e;
             }
-            fermerFiche();
+            fermerPanneau();
             notifier({ message: `Fiche de ${suivi.ami.nom} supprimée` });
           }}
           onAnnuler={revenirALaFiche}
@@ -145,6 +145,11 @@ function texteAnniversaire(ami: Ami, aujourdhui: Date): string {
   const date = anniv.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   const quand = anniv.jours === 0 ? 'aujourd’hui' : `dans ${anniv.jours} j`;
   return anniv.age === null ? `${date} · ${quand}` : `${date} · ${quand} · ${anniv.age} ans`;
+}
+
+function etSesEchanges(n: number): string {
+  if (n === 0) return '';
+  return n === 1 ? ' et son échange' : ` et ses ${n} échanges`;
 }
 
 function texteNombreEchanges(n: number): string {

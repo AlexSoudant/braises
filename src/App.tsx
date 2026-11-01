@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { versDateJour } from './domain/model';
 import { FicheAmi } from './ui/FicheAmi';
-import { useAdresse } from './ui/navigation';
+import { Menu } from './ui/Menu';
+import { ouvrirMenu, useAdresse } from './ui/navigation';
 import { Notifications } from './ui/Notification';
 import { NouvelAmi } from './ui/NouvelAmi';
 import { Registre } from './ui/Registre';
@@ -12,13 +13,24 @@ export function App() {
   return (
     <Notifications>
       <main className="mx-auto grid max-w-3xl gap-5 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-10">
-        <header>
-          <h1 className="font-titre text-4xl font-extrabold tracking-tight">Braises</h1>
-          <p className="mt-1 text-discret">Garde tes amitiés au chaud.</p>
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-titre text-4xl font-extrabold tracking-tight">Braises</h1>
+            <p className="mt-1 text-discret">Garde tes amitiés au chaud.</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Menu"
+            onClick={ouvrirMenu}
+            className="grid size-11 shrink-0 place-items-center rounded-lg border border-ligne text-xl font-bold"
+          >
+            <span aria-hidden="true">⋯</span>
+          </button>
         </header>
         <Registre aujourdhui={aujourdhui} />
         {adresse.page === 'ami' && <FicheAmi key={adresse.id} id={adresse.id} aujourdhui={aujourdhui} />}
         {adresse.page === 'nouvelAmi' && <NouvelAmi aujourdhui={aujourdhui} />}
+        {adresse.page === 'menu' && <Menu aujourdhui={aujourdhui} />}
       </main>
     </Notifications>
   );

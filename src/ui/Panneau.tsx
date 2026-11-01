@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { fermerFiche } from './navigation';
+import { fermerPanneau } from './navigation';
 import { NotificationsDuPanneau } from './Notification';
 
 /** Dialogue modal natif : panneau par le bas sur téléphone, centré sur grand écran. */
@@ -22,16 +22,16 @@ export function Panneau({ titre, children }: { titre: string; children: ReactNod
       // Échap déclenche « cancel » : on laisse la navigation fermer le panneau.
       onCancel={(e) => {
         e.preventDefault();
-        fermerFiche();
+        fermerPanneau();
       }}
       // Fermeture décidée par le navigateur lui-même : on remet l'adresse en accord. L'événement
       // arrive en différé : s'il suit un démontage/remontage (StrictMode), le dialogue est déjà rouvert.
       onClose={(e) => {
-        if (!e.currentTarget.open) fermerFiche();
+        if (!e.currentTarget.open) fermerPanneau();
       }}
       // Un clic sur le fond (hors du contenu) vise le dialogue lui-même.
       onClick={(e) => {
-        if (e.target === e.currentTarget) fermerFiche();
+        if (e.target === e.currentTarget) fermerPanneau();
       }}
       className="m-0 mt-auto max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-2xl bg-surface p-0 text-encre backdrop:bg-black/45 sm:m-auto sm:max-w-lg sm:rounded-2xl"
     >
@@ -42,7 +42,7 @@ export function Panneau({ titre, children }: { titre: string; children: ReactNod
           </h2>
           <button
             type="button"
-            onClick={fermerFiche}
+            onClick={fermerPanneau}
             className="rounded-lg border border-ligne px-3 py-1.5 text-sm font-semibold"
           >
             Fermer

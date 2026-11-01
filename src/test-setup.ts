@@ -22,6 +22,7 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
 
 beforeEach(async () => {
   history.replaceState(null, '', '/');
+  localStorage.clear();
   await db.amis.clear();
   await db.echanges.clear();
 });

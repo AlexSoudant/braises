@@ -36,10 +36,14 @@ export function MessageErreur({ id, children }: { id: string; children: ReactNod
   );
 }
 
-export function MessageEchec() {
+export function MessageEchec({
+  children = 'L’enregistrement a échoué. Réessaie.',
+}: {
+  children?: ReactNode;
+}) {
   return (
     <p role="alert" className="text-sm text-danger">
-      L’enregistrement a échoué. Réessaie.
+      {children}
     </p>
   );
 }

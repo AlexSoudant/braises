@@ -9,6 +9,7 @@ import {
   type Echange,
   type TypeEchange,
 } from '../domain/model';
+import { construireSauvegarde, nomFichierSauvegarde } from '../domain/sauvegarde';
 
 export const db = new Dexie('braises') as Dexie & {
   amis: EntityTable<Ami, 'id'>;
@@ -85,6 +86,25 @@ export async function supprimerEchange(id: string): Promise<Echange | undefined>
 /** Réinsère un Échange supprimé tel quel, avec le même identifiant. */
 export async function restaurerEchange(echange: Echange): Promise<void> {
   await db.echanges.put(echange);
+}
+
+/** Toutes les données dans un fichier de sauvegarde daté. */
+export async function exporter(maintenant: Date): Promise<File> {
+  const [amis, echanges] = await db.transaction('r', db.amis, db.echanges, () =>
+    Promise.all([db.amis.toArray(), db.echanges.toArray()]),
+  );
+  const sauvegarde = construireSauvegarde(amis, echanges, maintenant);
+  return new File([JSON.stringify(sauvegarde, null, 2)], nomFichierSauvegarde(maintenant), {
+    type: 'application/json',
+  });
+}
+
+/** Vide la base : on revient au premier lancement. */
+export async function effacerTout(): Promise<void> {
+  await db.transaction('rw', db.amis, db.echanges, async () => {
+    await db.amis.clear();
+    await db.echanges.clear();
+  });
 }
 
 export async function chargerExemples(aujourdhui: Date): Promise<void> {
